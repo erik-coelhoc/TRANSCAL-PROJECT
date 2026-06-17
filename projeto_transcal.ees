@@ -4,6 +4,7 @@ m_dot_agua=2,255 [kg/s]
 D_tubos= 10 [mm]
 L_trocador= 1246[mm]
 v_suco= 0,37 [m/s]
+D_c=   [mm]
 
 "Temperaturas"
 T_ent_agua= 82,30 [ºC]
@@ -37,3 +38,10 @@ Pr_suco=(c_p_suco*mi_suco)/k_suco
 "Água'
 Pr_agua=(c_p_agua*mi_agua)/k_agua
 
+"Número de Reynolds e Dean nos tubos helicoidais"
+Re_cr=2000*((D_tubos/D_c)^0,32)
+Re_tubos=(rho_suco*v_suco*D_tubos)/mi_suco
+De=Re_tubos*(sqrt(D_tubos/D_c))
+
+"Número de Reynolds no tubo externo"
+Re_tubo_externo=
