@@ -2,10 +2,11 @@ A_troca=2,4 [m^2]
 m_dot_suco=0,342 [kg/s]
 m_dot_agua=2,255 [kg/s]
 D_tubos= 10 [mm]
+D_tubos_ext 0,4 [mm]
 L_trocador= 1246[mm]
 v_suco= 0,37 [m/s]
 D_c=   [mm]
-
+n_tubos=
 "Temperaturas"
 T_ent_agua= 82,30 [ºC]
 T_sai_agua= 71,67 [ºC]
