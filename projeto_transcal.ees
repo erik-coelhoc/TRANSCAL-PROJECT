@@ -1,6 +1,5 @@
 FUNCTION Nus_Correlacao(Re_suco; De; Pr_suco; D_tubos; D_trocador)
 
-    "Primeira Condição"
     IF (Pr_suco>5) AND (Pr_suco<175) AND (De>5) AND (De<200) THEN
         Nus_Correlacao:=(0,65*SQRT(De)+0,76)*Pr_suco^0,175
         
@@ -38,6 +37,9 @@ n_tubos=A_troca/(pi*D_tubos_ext*L_trocador)
 k_suco= 0,58 [W/m*k]
 A_troca_ext=2*pi*D_tubos_ext/2
 h_agua=1
+k_agua=1
+k_inox=1
+mi_agua
 
 "Temperaturas"
 T_ent_agua= 82,30 [ºC]
@@ -47,7 +49,7 @@ T_sai_suco= 79,37 [ºC]
 
 "Balanço de massa e energia"
 q_dot=m_dot_agua*c_p_agua*(T_ent_agua-T_sai_agua)
-q_dot=m_dot*c_p_suco*(T_sai_suco-T_ent_suco)
+q_dot=m_dot_suco*c_p_suco*(T_sai_suco-T_ent_suco)
 
 "Coeficiente global de transferência de calor"
 V_aux=(A_troca_ext*ln(D_tubos_ext/D_tubos))/(2*pi*k_inox*L_trocador)+1/h_agua
@@ -93,7 +95,7 @@ Nus=Nus_Correlacao(Re_suco;De_suco;Pr_suco;D_tubos;D_trocador)
 {Re_tubo_externo=}
 
 "Coeficiente de transferência de calor médio do escoamento  interno"
-h_suco_m=(Nu*k_suco)/D_tubos
+h_suco_m=(Nus*k_suco)/D_tubos
 
 
 
