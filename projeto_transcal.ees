@@ -1,25 +1,30 @@
 FUNCTION Nus_Correlacao(Re_suco; De; Pr_suco; D_tubos; D_trocador)
 
+    Nu_aux:=0
+
     IF (Pr_suco>5) AND (Pr_suco<175) AND (De>5) AND (De<200) THEN
-        Nus_Correlacao:=(0,65*SQRT(De)+0,76)*Pr_suco^0,175
-        
+        Nu_aux:=(0,65*SQRT(De)+0,76)*Pr_suco^0,175
     ELSE
 
         IF (Pr_suco>0,7) AND (Pr_suco<175) AND (De>20) AND (De<200) THEN
             IF ((D_tubos/D_trocador)>0,0267) AND ((D_tubos/D_trocador)<0,0884) THEN
-                Nus_Correlacao:=(2,153+0,318*De^0,643)*Pr_suco^0,177
+                Nu_aux:=(2,153+0,318*De^0,643)*Pr_suco^0,177
             ENDIF
         ENDIF
         
         IF (Pr_suco>0,7) AND (Pr_suco<5) AND (Re_suco>5E3) AND (Re_suco<1E5) THEN
             IF ((D_tubos/D_trocador)>0,0267) AND ((D_tubos/D_trocador)<0,0884) THEN
-                Nus_Correlacao:=(1+3,455*D_tubos/D_trocador)*Re_suco^0,92*Pr_suco^0,4
+                Nu_aux:=(1+3,455*D_tubos/D_trocador)*Re_suco^0,92*Pr_suco^0,4
             ENDIF
         ENDIF
+
     ENDIF
 
+    IF (Nu_aux=0) THEN
+        Nu_aux:=0,001
+    ENDIF
 
-    IF (Nus_Correlacao = 0) THEN Nus_Correlacao:=0,001 
+    Nus_Correlacao:=Nu_aux
 
 END
 
@@ -27,33 +32,37 @@ END
 A_troca=2,4 [m^2]
 m_dot_suco=0,342 [kg/s]
 m_dot_agua=2,255 [kg/s]
-D_tubos= 10 [mm]
-D_tubos_ext= 10,4 [mm]
-D_trocador= 159 [mm]
-L_trocador= 1246[mm]
+D_tubos= 0,010 [m]
+D_tubos_ext= 0,0104 [m]
+D_trocador= 0,159 [m]
+L_trocador= 1,246[m]
 v_suco= 0,37 [m/s]
-D_c=1 [mm] [podemos fazer com esse valor parametrico]
+D_c=1 [m] "podemos fazer com esse valor parametrico"
 n_tubos=A_troca/(pi*D_tubos_ext*L_trocador)
 k_suco= 0,58 [W/m*k]
-A_troca_ext=2*pi*D_tubos_ext/2
+A_troca_ext=pi*D_tubos_ext*L_trocador 
 h_agua=1
-k_agua=1
-k_inox=1
-mi_agua
+k_agua=0,60 [W/(m*K)]
+k_inox=15 [W/(m*K)]
+mi_agua=1,0E-3 [Pa*s]
+rho_suco = 1050 [kg/m]
+mi_suco = 1,5E-3 [Pa*s]
+C_max=1,5
+C_min=1
 
 "Temperaturas"
-T_ent_agua= 82,30 [ºC]
-T_sai_agua= 71,67 [ºC]
-T_ent_suco= 5,00 [ºC]
-T_sai_suco= 79,37 [ºC]
+T_ent_agua = 355,45 [K]
+T_sai_agua = 344,82 [K]
+T_ent_suco = 278,15 [K]
+T_sai_suco = 352,52 [K]
 
 "Balanço de massa e energia"
 q_dot=m_dot_agua*c_p_agua*(T_ent_agua-T_sai_agua)
 q_dot=m_dot_suco*c_p_suco*(T_sai_suco-T_ent_suco)
 
 "Coeficiente global de transferência de calor"
-V_aux=(A_troca_ext*ln(D_tubos_ext/D_tubos))/(2*pi*k_inox*L_trocador)+1/h_agua
-U=(((A_troca_ext)/(A_troca*h_suco_m))+V_aux)^(-1)
+{V_aux=}
+U=(((A_troca_ext)/(A_troca*h_suco_m))+(A_troca_ext*ln(D_tubos_ext/D_tubos))/(2*pi*k_inox*L_trocador)+1/h_agua)^(-1)
 
 "Equações de taxa"
 q_dot=U*A_troca*DELTAT_lm
@@ -69,8 +78,8 @@ C_r=C_min/C_max
 DELTAP=f_helicoidal*(L_trocador/D_tubos)*((rho_suco*v_suco)/2)
 
 "Correção do fator de atrito"
-f_reto=0,3164*Re^(−0,25)
-f_helicoidal=f_reto*(Re*((D_tubos/D_c)^2)^0,05)
+f_reto=0,3164*Re_suco^(−0,25)
+f_helicoidal=f_reto*(Re_suco*((D_tubos/D_c)^2)^0,05)
 
 
 "Correlações para coeficientes de convecção"
@@ -80,15 +89,15 @@ f_helicoidal=f_reto*(Re*((D_tubos/D_c)^2)^0,05)
 "Número de Prandlt"
 "Suco"
 
-Pr_suco = c_p_suco*mi_suco/k_suco
+Pr_suco = (c_p_suco*mi_suco)/k_suco
 
 "Água"
 Pr_agua=(c_p_agua*mi_agua)/k_agua
 
 "Número de Reynolds, Dean e Nusselt nos tubos helicoidais"
 Re_cr=2000*((D_tubos/D_c)^0,32)
-Re_tubos=(rho_suco*v_suco*D_tubos)/mi_suco
-De_suco=Re_tubos*(sqrt(D_tubos/D_c))
+Re_suco=(rho_suco*v_suco*D_tubos)/mi_suco
+De_suco=Re_suco*(sqrt(D_tubos/D_c))
 Nus=Nus_Correlacao(Re_suco;De_suco;Pr_suco;D_tubos;D_trocador)
 
 "Número de Reynolds no tubo externo"
