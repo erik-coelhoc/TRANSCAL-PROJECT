@@ -30,12 +30,14 @@ m_dot_suco=0,342 [kg/s]
 m_dot_agua=2,255 [kg/s]
 D_tubos= 10 [mm]
 D_tubos_ext= 10,4 [mm]
+D_trocador= 159 [mm]
 L_trocador= 1246[mm]
 v_suco= 0,37 [m/s]
-D_c=   [mm]
+D_c=1 [mm] [podemos fazer com esse valor parametrico]
 n_tubos=A_troca/(pi*D_tubos_ext*L_trocador)
-D_trocador= 159 [mm]
 k_suco= 0,58 [W/m*k]
+A_troca_ext=2*pi*D_tubos_ext/2
+h_agua=1
 
 "Temperaturas"
 T_ent_agua= 82,30 [ºC]
@@ -47,9 +49,14 @@ T_sai_suco= 79,37 [ºC]
 q_dot=m_dot_agua*c_p_agua*(T_ent_agua-T_sai_agua)
 q_dot=m_dot*c_p_suco*(T_sai_suco-T_ent_suco)
 
+"Coeficiente global de transferência de calor"
+V_aux=(A_troca_ext*ln(D_tubos_ext/D_tubos))/(2*pi*k_inox*L_trocador)+1/h_agua
+U=(((A_troca_ext)/(A_troca*h_suco_m))+V_aux)^(-1)
+
 "Equações de taxa"
 q_dot=U*A_troca*DELTAT_lm
 DELTAT_lm=((T_ent_agua-T_sai_suco)-(T_sai_agua-T_ent_suco))/ln((T_ent_agua-T_sai_suco)/(T_sai_agua-T_ent_suco))
+
 
 "Método da efetividade"
 epsilon=(1-C_r*exp(-NUT*(1-C_r)))/(1-exp(-NUT*(1-C_r)))
@@ -58,11 +65,11 @@ C_r=C_min/C_max
 
 "Equação da queda de pressão"
 DELTAP=f_helicoidal*(L_trocador/D_tubos)*((rho_suco*v_suco)/2)
- "Correção do fator de atrito"
- f_helicoidal=f_reto*(Re*((D_tubos/D_c)^2)^0,05)
 
-"Coeficiente global de transferência de calor"
-{U=???????????????????????????????????????????}
+"Correção do fator de atrito"
+f_reto=0,3164*Re^(−0,25)
+f_helicoidal=f_reto*(Re*((D_tubos/D_c)^2)^0,05)
+
 
 "Correlações para coeficientes de convecção"
 "Lado do tubo"
