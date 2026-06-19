@@ -28,31 +28,39 @@ FUNCTION Nus_Correlacao(Re_suco; De; Pr_suco; D_tubos; D_trocador)
 
 END
 
-
+"Dados geométricos"
 A_troca=2,4 [m^2]
-m_dot_suco=0,342 [kg/s]
-m_dot_agua=2,255 [kg/s]
 D_tubos= 0,010 [m]
 D_tubos_ext= 0,0104 [m]
 D_trocador= 0,159 [m]
 L_trocador= 1,246[m]
-v_suco= 0,37 [m/s]
-n_tubos=A_troca/(pi*D_tubos*L_trocador)
-k_suco= 0,58 [W/m*k]
-A_troca_ext=pi*D_tubos_ext*L_trocador*n_tubos
-h_agua=400 [W/K*m^2]
-k_agua=0,60 [W/(m*K)]
+D_c=0,012 [m]
+
+
+"Propriedades físicas"
 k_inox=15 [W/(m*K)]
+k_suco= 0,58 [W/m*k]
+k_agua=0,60 [W/(m*K)]
 mi_agua=0,0004 [Pa*s]
-rho_suco = 1050 [kg/m]
-mi_suco = 1,5E-3 [Pa*s]
-C_max=9451 [W/K]
-C_min=1341 [W/K]
 c_p_agua=4186 [J/kg*K]
 c_p_suco=3920 [J/kg*K]
+rho_suco = 1050 [kg/m]
+mi_suco = 1,5E-3 [Pa*s]
+h_agua=400 [W/K*m^2]
 
-D_c=0,012
-C_inc=0,01
+
+"Dados dos fluxos"
+m_dot_suco=0,342 [kg/s]
+m_dot_agua=2,255 [kg/s]
+v_suco= 0,37 [m/s]
+C_max=9451 [W/K]
+C_min=1341 [W/K]
+C_inc=0,0001
+
+
+"Sobre os tubos"
+n_tubos=A_troca/(pi*D_tubos*L_trocador)
+A_troca_ext=pi*D_tubos_ext*L_trocador*n_tubos
 
 
 "Temperaturas"
@@ -84,7 +92,7 @@ DELTAP=f_helicoidal*(L_trocador/D_tubos)*((rho_suco*v_suco^2)/2)
 "Correção do fator de atrito"
 f_reto=0,3164*Re_suco^(-1/4)
 
-f_helicoidal=f_reto*(Re_suco*((D_tubos/D_c)^2)^0,05)
+f_helicoidal=f_reto*(Re_suco*((D_tubos/D_c)^2))^0,05
 
 
 "Correlações para coeficientes de convecção"
