@@ -2,7 +2,7 @@ FUNCTION Nus_Correlacao(Re_suco; De; Pr_suco; D_tubos; D_trocador)
 
     Nu_aux:=0
 
-    IF (Pr_suco>5) AND (Pr_suco<175) AND (De>5) AND (De<200) THEN
+    IF (Pr_suco>5) AND (Pr_suco<175) AND (De>5) AND (De<3000) THEN
         Nu_aux:=(0,65*SQRT(De)+0,76)*Pr_suco^0,175
     ELSE
 
@@ -37,20 +37,23 @@ D_tubos_ext= 0,0104 [m]
 D_trocador= 0,159 [m]
 L_trocador= 1,246[m]
 v_suco= 0,37 [m/s]
-D_c=1 [m] "podemos fazer com esse valor parametrico"
-n_tubos=A_troca/(pi*D_tubos_ext*L_trocador)
+n_tubos=A_troca/(pi*D_tubos*L_trocador)
 k_suco= 0,58 [W/m*k]
-A_troca_ext=pi*D_tubos_ext*L_trocador 
-h_agua=1
+A_troca_ext=pi*D_tubos_ext*L_trocador*n_tubos
+h_agua=400 [W/K*m^2]
 k_agua=0,60 [W/(m*K)]
 k_inox=15 [W/(m*K)]
-mi_agua=1,0E-3 [Pa*s]
+mi_agua=0,0004 [Pa*s]
 rho_suco = 1050 [kg/m]
 mi_suco = 1,5E-3 [Pa*s]
-C_max=1,5 [W/K]
-C_min=1 [W/K]
+C_max=9451 [W/K]
+C_min=1341 [W/K]
 c_p_agua=4186 [J/kg*K]
-c_p_suco=4186 [J/kg*K]
+c_p_suco=3920 [J/kg*K]
+
+D_c=0,012
+C_inc=0,01
+
 
 "Temperaturas"
 T_ent_agua = 355,45 [K]
@@ -59,25 +62,24 @@ T_ent_suco = 278,15 [K]
 T_sai_suco = 352,52 [K]
 
 "Balanço de massa e energia"
-q_dot_agua=m_dot_agua*c_p_agua*(T_ent_agua-T_sai_agua)
-q_dot_suco=m_dot_suco*c_p_suco*(T_sai_suco-T_ent_suco)
+{q_dot_agua=m_dot_agua*c_p_agua*(T_ent_agua-T_sai_agua)
+q_dot_suco=m_dot_suco*c_p_suco*(T_sai_suco-T_ent_suco)}
 
 "Coeficiente global de transferência de calor"
-{V_aux=}
-U=(((A_troca_ext)/(A_troca*h_suco_m))+(A_troca_ext*ln(D_tubos_ext/D_tubos))/(2*pi*k_inox*L_trocador)+1/h_agua)^(-1)
+U=(((A_troca_ext)/(A_troca*h_suco_m))+(A_troca_ext*ln(D_tubos_ext/D_tubos))/(2*pi*k_inox*L_trocador)+1/h_agua+C_inc)^(-1)
 
 "Equações de taxa"
-q_dot=U*A_troca*DELTAT_lm
+q_dot_suco=U*A_troca*DELTAT_lm
 DELTAT_lm=((T_ent_agua-T_sai_suco)-(T_sai_agua-T_ent_suco))/ln((T_ent_agua-T_sai_suco)/(T_sai_agua-T_ent_suco))
 
 
 "Método da efetividade"
-epsilon=(1-C_r*exp(-NUT*(1-C_r)))/(1-exp(-NUT*(1-C_r)))
+epsilon=(1-exp(-NUT*(1-C_r)))/(1-C_r*exp(-NUT*(1-C_r)))
 NUT=(U*A_troca)/C_min
 C_r=C_min/C_max
 
 "Equação da queda de pressão"
-DELTAP=f_helicoidal*(L_trocador/D_tubos)*((rho_suco*v_suco)/2)
+DELTAP=f_helicoidal*(L_trocador/D_tubos)*((rho_suco*v_suco^2)/2)
 
 "Correção do fator de atrito"
 f_reto=0,3164*Re_suco^(-1/4)
@@ -108,5 +110,7 @@ Nus=Nus_Correlacao(Re_suco;De_suco;Pr_suco;D_tubos;D_trocador)
 
 "Coeficiente de transferência de calor médio do escoamento  interno"
 h_suco_m=(Nus*k_suco)/D_tubos
+
+
 
 
