@@ -1,124 +1,175 @@
 FUNCTION Nus_Correlacao(Re_suco; De; Pr_suco; D_tubos; D_trocador)
-
-    Nu_aux:=0
-
-    IF (Pr_suco>5) AND (Pr_suco<175) AND (De>5) AND (De<3000) THEN
-        Nu_aux:=(0,65*SQRT(De)+0,76)*Pr_suco^0,175
-    ELSE
-
-        IF (Pr_suco>0,7) AND (Pr_suco<175) AND (De>20) AND (De<200) THEN
-            IF ((D_tubos/D_trocador)>0,0267) AND ((D_tubos/D_trocador)<0,0884) THEN
-                Nu_aux:=(2,153+0,318*De^0,643)*Pr_suco^0,177
-            ENDIF
-        ENDIF
-        
-        IF (Pr_suco>0,7) AND (Pr_suco<5) AND (Re_suco>5E3) AND (Re_suco<1E5) THEN
-            IF ((D_tubos/D_trocador)>0,0267) AND ((D_tubos/D_trocador)<0,0884) THEN
-                Nu_aux:=(1+3,455*D_tubos/D_trocador)*Re_suco^0,92*Pr_suco^0,4
-            ENDIF
-        ENDIF
-
+Nu_aux:=0
+IF (Pr_suco>5) AND (Pr_suco<175) AND (De>5) AND (De<3000) THEN         
+    Nu_aux:=(0,65*SQRT(De)+0,76)*Pr_suco^0,175     
+ELSE
+    IF (Pr_suco>0,7) AND (Pr_suco<175) AND (De>20) AND (De<200) THEN             
+        IF ((D_tubos/D_trocador)>0,0267) AND ((D_tubos/D_trocador)<0,0884) THEN                 
+            Nu_aux:=(2,153+0,318*De^0,643)*Pr_suco^0,177             
+        ENDIF         
+    ENDIF                 
+    IF (Pr_suco>0,7) AND (Pr_suco<5) AND (Re_suco>5E3) AND (Re_suco<1E5) THEN             
+        IF ((D_tubos/D_trocador)>0,0267) AND ((D_tubos/D_trocador)<0,0884) THEN                 
+            Nu_aux:=(1+3,455*D_tubos/D_trocador)*Re_suco^0,92*Pr_suco^0,4             
+        ENDIF         
     ENDIF
+ENDIF
+IF (Nu_aux=0) THEN         
+    Nu_aux:=0,001     
+ENDIF
+Nus_Correlacao:=Nu_aux
+END
 
-    IF (Nu_aux=0) THEN
-        Nu_aux:=0,001
-    ENDIF
-
-    Nus_Correlacao:=Nu_aux
+PROCEDURE Iteracao_Convergencia(T_ent_agua; T_ent_suco; m_dot_agua; c_p_agua; m_dot_suco; c_p_suco; U; A_troca : T_sai_suco_final; T_sai_agua_final)
+    
+    // 1. Chute inicial
+    T_novo := 200
+    iteracoes := 0 
+    REPEAT
+	  iteracoes := iteracoes + 1 
+       T_sai_suco_iter := T_novo
+       
+       // 2. Calcula o calor daquele passo usando o balanço do suco
+       q_dot_suco := m_dot_suco * c_p_suco * (T_sai_suco_iter - T_ent_suco)
+       
+       // 3. Descobre qual seria a temperatura de saída da água
+       T_sai_agua_iter := T_ent_agua - (q_dot_suco / (m_dot_agua * c_p_agua))
+       
+       // 4. Calcula o LMTD
+       DELTAT_lm := ((T_ent_agua - T_sai_suco_iter) - (T_sai_agua_iter - T_ent_suco)) / ln((T_ent_agua - T_sai_suco_iter) / (T_sai_agua_iter - T_ent_suco))
+       
+       // 5. Calcula o calor real da troca usando o U e a LMTD
+       q_dot_taxa := U * A_troca * DELTAT_lm
+       
+       // 6. Verifica o erro absoluto (sempre positivo)
+       erro := ABS(q_dot_taxa - q_dot_suco)
+       
+       // 7. Ajusta a temperatura (o seu iterador)
+       IF (q_dot_taxa > q_dot_suco) THEN
+           T_novo := T_sai_suco_iter + 0,1
+       ELSE
+           T_novo := T_sai_suco_iter - 0,1
+       ENDIF
+       
+    // 8. Condição de parada: O loop repete ATÉ QUE o erro seja menor que 50 W
+    UNTIL (erro < 80) 
+    
+    // 9. Devolve os resultados convergidos
+    T_sai_suco_final := T_sai_suco_iter
+    T_sai_agua_final := T_sai_agua_iter
 
 END
 
-"Dados geométricos"
-A_troca=2,4 [m^2]
-D_tubos= 0,010 [m]
-D_tubos_ext= 0,0104 [m]
-D_trocador= 0,159 [m]
-L_trocador= 1,246[m]
-D_c=0,012 [m]
 
+A_troca=2,4 [m^2] 
+m_dot_suco=0,342 [kg/s] 
+m_dot_agua=2,255 [kg/s] 
+D_tubos= 0,010 [m] 
+D_tubos_ext= 0,0104 [m] 
+D_trocador= 0,159 [m] 
+L_trocador= 1,246[m] 
+v_suco= 0,37 [m/s] 
+v_agua=0,45 [m/s]
+n_tubos=A_troca/(pi*D_tubos*L_trocador) 
+k_suco= 0,58 [W/m*k] 
+A_troca_ext=pi*D_tubos_ext*L_trocador*n_tubos 
 
-"Propriedades físicas"
-k_inox=15 [W/(m*K)]
-k_suco= 0,58 [W/m*k]
-k_agua=0,60 [W/(m*K)]
-mi_agua=0,0004 [Pa*s]
-c_p_agua=4186 [J/kg*K]
+k_agua=0,60 [W/(m*K)] 
+k_inox=15 [W/(m*K)] 
+mi_agua=0,0004 [Pa*s] 
+rho_suco = 1050 [kg/m] 
+rho_agua = 1050 [kg/m] 
+mi_suco = 1,5E-3 [Pa*s] 
+C_max=9451 [W/K] 
+C_min=1341 [W/K] 
+c_p_agua=4186 [J/kg*K] 
 c_p_suco=3920 [J/kg*K]
-rho_suco = 1050 [kg/m]
-mi_suco = 1,5E-3 [Pa*s]
-h_agua=400 [W/K*m^2]
 
-
-"Dados dos fluxos"
-m_dot_suco=0,342 [kg/s]
-m_dot_agua=2,255 [kg/s]
-v_suco= 0,37 [m/s]
-C_max=9451 [W/K]
-C_min=1341 [W/K]
+D_c=0,012 
 C_inc=0,0001
 
-
-"Sobre os tubos"
-n_tubos=A_troca/(pi*D_tubos*L_trocador)
-A_troca_ext=pi*D_tubos_ext*L_trocador*n_tubos
-
-
-"Temperaturas"
-T_ent_agua = 355,45 [K]
-T_sai_agua = 344,82 [K]
-T_ent_suco = 278,15 [K]
+"Temperaturas" 
+T_ent_agua = 355,45 [K] 
+{T_sai_agua = 344,82 [K] }
+T_ent_suco = 278,15 [K] 
 T_sai_suco = 352,52 [K]
 
-"Balanço de massa e energia"
-{q_dot_agua=m_dot_agua*c_p_agua*(T_ent_agua-T_sai_agua)
-q_dot_suco=m_dot_suco*c_p_suco*(T_sai_suco-T_ent_suco)}
+"Balanço de massa e energia" 
+{q_dot=m_dot_agua*c_p_agua*(T_ent_agua-T_sai_agua) }
+q_dot=m_dot_suco*c_p_suco*(T_sai_suco-T_ent_suco)
 
-"Coeficiente global de transferência de calor"
-U=(((A_troca_ext)/(A_troca*h_suco_m))+(A_troca_ext*ln(D_tubos_ext/D_tubos))/(2*pi*k_inox*L_trocador)+1/h_agua+C_inc)^(-1)
+m_dot_suco*c_p_suco*(T_sai_suco-T_ent_suco)=m_dot_agua*c_p_agua*(T_ent_agua-T_sai_agua)
 
-"Equações de taxa"
-q_dot_suco=U*A_troca*DELTAT_lm
-DELTAT_lm=((T_ent_agua-T_sai_suco)-(T_sai_agua-T_ent_suco))/ln((T_ent_agua-T_sai_suco)/(T_sai_agua-T_ent_suco))
+"Número de Reynolds, Dean, Nusselt e Prandtl nos tubos helicoidais" 
+Re_cr=2000*((D_tubos/D_c)^0,32) 
+Re_suco=(rho_suco*v_suco*D_tubos)/mi_suco 
+De_suco=Re_suco*(sqrt(D_tubos/D_c)) 
+Nus=Nus_Correlacao(Re_suco;De_suco;Pr_suco;D_tubos;D_trocador)
+Pr_suco = (c_p_suco*mi_suco)/k_suco
 
+"Número de Reynolds, Nusselt e Prandtl no casco" 
+Re_agua = (rho_agua * v_agua * D_tubos) / mi_agua
+Pr_agua = (mi_agua * c_p_agua) / k_agua
+Nus_agua = 0,247 * (Re_agua^0,723) * ((D_bobina/D_tubos)^0,378) * ((D_entrada/D_tubos)^0,556) * ((D_trocador/D_tubos)^(-0,82)) * ((H_bobina/D_tubos)^0,043) * ((H_casco/D_tubos)^(-1,03)) * ((dist_entradas/D_tubos)^0,561) * ((p_bobina/D_tubos)^0,138) * (Pr_agua^0,717)
 
-"Método da efetividade"
-epsilon=(1-exp(-NUT*(1-C_r)))/(1-C_r*exp(-NUT*(1-C_r)))
-NUT=(U*A_troca)/C_min
+"Coeficiente de transferência de calor médio do escoamento  interno" 
+h_suco_m=(Nus*k_suco)/D_tubos
+h_agua=(Nus_agua*k_agua)/D_tubos 
+
+"Método da efetividade" 
+epsilon=(1-exp(-NUT*(1-C_r)))/(1-C_r*exp(-NUT*(1-C_r))) 
+NUT=(U*A_troca)/C_min 
 C_r=C_min/C_max
 
-"Equação da queda de pressão"
-DELTAP=f_helicoidal*(L_trocador/D_tubos)*((rho_suco*v_suco^2)/2)
 
-"Correção do fator de atrito"
+"======================================================================================================================"
+"Coeficiente global de transferência de calor"
+U=(((A_troca_ext)/(A_troca*h_suco_m))+(A_troca_ext*ln(D_tubos_ext/D_tubos))/(2*pi*k_inox*L_trocador)+1/h_agua+ C_inc)^(-1)
+
+"Equações de taxa" 
+q_dot_real=U*A_troca*DELTAT_lm 
+DELTAT_lm=((T_ent_agua-T_sai_suco)-(T_sai_agua-T_ent_suco))/ln((T_ent_agua-T_sai_suco)/(T_sai_agua-T_ent_suco))
+
+"========================"
+"Chamada do Loop Iterativo"
+CALL Iteracao_Convergencia(T_ent_agua; T_ent_suco; m_dot_agua; c_p_agua; m_dot_suco; c_p_suco; U; A_troca : T_sai_suco_conv; T_sai_agua_conv)
+
+"Calor final após a convergência"
+q_dot_convergido = m_dot_suco * c_p_suco * (T_sai_suco_conv - T_ent_suco)
+
+
+
+
+"Equação da queda de pressão" 
+DELTAP_suco=f_helicoidal*(L_trocador/D_tubos)*((rho_suco*v_suco^2)/2)
+
+"Correção do fator de atrito" 
 f_reto=0,3164*Re_suco^(-1/4)
-
 f_helicoidal=f_reto*(Re_suco*((D_tubos/D_c)^2))^0,05
 
 
-"Correlações para coeficientes de convecção"
-"Lado do tubo"
-{De=Re*sqrt((D_tubos/d))  [perguntar os d] ????????????????????????????????}
 
-"Número de Prandlt"
-"Suco"
+D_bobina = 0,131 "[m] - Diâmetro da serpentina (bobina)"
+D_entrada = 0,08 "[m] - Diâmetro da entrada do casco"
+H_bobina = 0,85 "[m] - Altura da bobina"
+H_casco = 1,246 "[m] - Altura do casco"
+dist_entradas = 1,256 "[m] - Distância entre entrada e saída do casco"
+p_bobina = 0,01 "[m] - Passo da bobina"
 
-Pr_suco = (c_p_suco*mi_suco)/k_suco
+S_n = 0,014 "[m] - Passo entre os tubos (pitch do layout)"
+C_p_arr = 1,0 "[-] - Constante para arranjo quadrado"
+N_B = 0 "[-] - Número de chicanas (baffles)"
+f_atrito = 0,00618 "[-] - Fator de fricção de Fanning fornecido"
 
-"Água"
-Pr_agua=(c_p_agua*mi_agua)/k_agua
+"--------------------------------------------------------------------------------"
+" CÁLCULOS DE QUEDA DE PRESSÃO (Lado do Casco) "
+"--------------------------------------------------------------------------------"
 
-"Número de Reynolds, Dean e Nusselt nos tubos helicoidais"
-Re_cr=2000*((D_tubos/D_c)^0,32)
-Re_suco=(rho_suco*v_suco*D_tubos)/mi_suco
-De_suco=Re_suco*(sqrt(D_tubos/D_c))
-Nus=Nus_Correlacao(Re_suco;De_suco;Pr_suco;D_tubos;D_trocador)
+"5. Diâmetro Equivalente (D_equivalente) para o casco [Ref. 18]"
+D_equivalente = (4 * (C_p_arr * S_n^2 - (pi * D_tubos^2 / 4))) / (pi * D_tubos)
 
-"Número de Reynolds no tubo externo"
-{Re_tubo_externo=}
-
-"Coeficiente de transferência de calor médio do escoamento  interno"
-h_suco_m=(Nus*k_suco)/D_tubos
-
-
-
+"7. Queda de Pressão no Casco (DeltaP_casco) [Ref. 14]"
+"Fonte: Peters, Timmerhaus e West"
+G_s = rho_agua * v_agua
+{DELTAP_casco = (2 * f_atrito * G_s^2 * D_trocador * (N_B + 1)) / (rho_agua * D_equivalente * (mi_agua / mi_agua)^0,14) [Pa]}
 
